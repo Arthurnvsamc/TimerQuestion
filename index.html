@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Timer de Questões</title>
+<link rel="icon" href="icone.ico" type="image/x-icon">
+
+<style>
+  /* Estilos gerais e modo noturno */
+  body { background-color: #121212; color: #ffffff; font-family: Arial, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+  .container { display: flex; flex-direction: row; align-items: flex-start; gap: 20px; max-width: 800px; }
+  .timer-container { text-align: center; max-width: 300px; background-color: #1e1e1e; padding: 20px; border-radius: 10px; }
+  input[type="number"] { width: 100%; padding: 5px; margin: 5px 0; font-size: 16px; color: #ffffff; background-color: #333333; border: 1px solid #444; border-radius: 5px; }
+  button { padding: 10px 20px; font-size: 16px; margin: 5px; cursor: pointer; color: #ffffff; background-color: #444444; border: none; border-radius: 5px; transition: background-color 0.3s; }
+  button:hover { background-color: #555555; }
+  .display { font-size: 48px; font-weight: bold; margin: 10px 0; transition: color 0.3s; }
+  
+  /* Tabela de feedback */
+  .table-container { max-width: 250px; width: 100%; background-color: #1e1e1e; border-radius: 10px; padding: 20px; }
+  table { width: 100%; color: #ffffff; border-collapse: collapse; }
+  th, td { padding: 10px; text-align: center; border-bottom: 1px solid #444; }
+  th { font-weight: bold; color: #aaaaaa; }
+  
+  /* Estilos de status */  
+  .start { color: #ffffff; } /* Branco Inicial*/
+  .work { color: #00ff7f; } /* Verde para trabalho */
+  .rest { color: #00bfff; } /* Azul para descanso */
+  .paused { color: #ff4500; } /* Vermelho para pausado */
+
+</style>
+</head>
+<body>
+
+<audio id="startSound" src="start.mp3" preload="auto"></audio>
+<audio id="finishSound" src="finish.mp3" preload="auto"></audio>
+<audio id="pauseSound" src="pause.mp3" preload="auto"></audio>
+<audio id="resumeSound" src="resume.mp3" preload="auto"></audio>
+<audio id="completeSound" src="complete.mp3" preload="auto"></audio> <!-- Som ao terminar todas as questões -->
+
+
+<div class="container">
+  <!-- Temporizador e configurações -->
+  <div class="timer-container">
+    <h2>Timer de Questões</h2>
+    
+    <!-- Configurações -->
+    <label>Tempo de trabalho (segundos):</label>
+    <input type="number" id="workTime" value="30">
+    
+    <label>Tempo de descanso (segundos):</label>
+    <input type="number" id="restTime" value="5">
+    
+    <label>Número de questões:</label>
+<input type="number" id="numCycles" value="10" min="1">
+
+<!-- Exibição do Timer -->
+<div class="display start" id="timerDisplay">00:00</div>
+<div>Total acumulado: <span id="totalTime">00:00</span></div>
+
+<!-- Exibição de Questões -->
+<div id="questionInfo" style="display: none;"> <!-- Alterei display: none para block para exibir -->
+    Questão atual: <span id="currentQuestion">1</span> de <span id="totalQuestions">5</span><br>
+    Questões restantes: <span id="remainingQuestions">5</span>
+</div>
+
+    
+    <!-- Botões -->
+    <button id="startBtn">Iniciar</button>
+    <button id="pauseBtn" disabled>Pausar</button>
+    <button id="finishBtn" disabled>Finalizar Questão (Enter)</button>
+    <button id="resetBtn" disabled>Reiniciar</button>
+  </div>
+
+  <!-- Tabela de Feedback -->
+  <div class="table-container">
+    <h3>Tempo por Questão</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Questão</th>
+          <th>Tempo Gasto</th>
+        </tr>
+      </thead>
+      <tbody id="logTable">
+        <!-- Linhas de log serão adicionadas dinamicamente aqui -->
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  let workTime, restTime, numCycles, currentCycle, totalSeconds;
+  let timer, accumulator = 0, isWorking = true, isPaused = false, cycleTimes = [];
+
+  const timerDisplay = document.getElementById('timerDisplay');
+  const totalTimeDisplay = document.getElementById('totalTime');
+  const startBtn = document.getElementById('startBtn');
+  const pauseBtn = document.getElementById('pauseBtn');
+  const finishBtn = document.getElementById('finishBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const currentQuestionDisplay = document.getElementById('currentQuestion');
+  const remainingQuestionsDisplay = document.getElementById('remainingQuestions');
+  const logTable = document.getElementById('logTable');
+  const questionInfo = document.getElementById('questionInfo');
+
+  const startSound = document.getElementById('startSound');
+  const finishSound = document.getElementById('finishSound');
+  const pauseSound = document.getElementById('pauseSound');
+  const resumeSound = document.getElementById('resumeSound');
+
+  function formatTime(seconds) {
+    const m = String(Math.floor(seconds / 60)).padStart(2, '0');
+    const s = String(seconds % 60).padStart(2, '0');
+    return `${m}:${s}`;
+  }
+
+  function startTimer() {
+    workTime = parseInt(document.getElementById('workTime').value);
+    restTime = parseInt(document.getElementById('restTime').value);
+    numCycles = parseInt(document.getElementById('numCycles').value);
+
+    currentCycle = 1;
+    totalSeconds = workTime;
+    accumulator = 0;
+    cycleTimes = [];
+    isWorking = true;
+    isPaused = false;
+
+    questionInfo.style.display = "block"; // Mostrar informações da questão
+    currentQuestionDisplay.textContent = currentCycle;
+    remainingQuestionsDisplay.textContent = numCycles;
+    startBtn.disabled = true;
+    finishBtn.disabled = false;
+    resetBtn.disabled = false;
+    pauseBtn.disabled = false;
+
+    timerDisplay.classList.add('work');
+    timerDisplay.classList.remove('rest', 'paused');
+    timerDisplay.textContent = formatTime(totalSeconds);
+    totalTimeDisplay.textContent = formatTime(accumulator);
+    
+    startSound.play(); // Reproduzir som ao iniciar
+    timer = setInterval(updateTimer, 1000);
+
+   
+  }
+
+// Função para atualizar as informações das questões
+    function updateQuestionInfo() {
+        // Obtendo o valor do input
+        const numCyclesInput = document.getElementById('numCycles');
+        const totalQuestions = parseInt(numCyclesInput.value) || 0; // Pega o valor do input
+
+        // Atualiza a quantidade total de questões
+        document.getElementById('totalQuestions').innerText = totalQuestions;
+
+        // Atualiza a questão atual e as questões restantes
+        const currentQuestion = 1; // Você pode modificar isso para manter o controle da questão atual
+        document.getElementById('currentQuestion').innerText = currentQuestion;
+        document.getElementById('remainingQuestions').innerText = totalQuestions - currentQuestion;
+    }
+
+    // Adiciona evento para atualizar quando o número de questões muda
+    document.getElementById('numCycles').addEventListener('input', updateQuestionInfo);
+
+    // Chama a função para inicializar com o valor padrão
+    updateQuestionInfo();
+
+  function updateTimer() {
+    if (totalSeconds > 0 && !isPaused) {
+      totalSeconds--;
+      accumulator++;
+      timerDisplay.textContent = formatTime(totalSeconds);
+      totalTimeDisplay.textContent = formatTime(accumulator);
+    } else if (!isPaused) {
+      if (isWorking) {
+        cycleTimes.push(workTime - totalSeconds); // Salva tempo gasto na questão
+        addLogEntry(currentCycle, formatTime(workTime - totalSeconds));
+        finishSound.play(); // Som ao finalizar questão
+
+        if (currentCycle >= numCycles) {
+          stopTimer();
+        } else {
+          isWorking = false;
+          totalSeconds = restTime;
+          timerDisplay.classList.add('rest');
+          timerDisplay.classList.remove('work');
+          timerDisplay.textContent = formatTime(totalSeconds);
+        }
+      } else {
+        isWorking = true;
+        currentCycle++;
+        totalSeconds = workTime;
+        currentQuestionDisplay.textContent = currentCycle;
+        remainingQuestionsDisplay.textContent = numCycles - currentCycle + 1;
+
+        timerDisplay.classList.add('work');
+        timerDisplay.classList.remove('rest');
+        timerDisplay.textContent = formatTime(totalSeconds);
+
+        startSound.play(); // Reproduzir som ao iniciar
+      }
+    }
+  }
+
+  function finishQuestion() {
+    if (isWorking && currentCycle <= numCycles) {
+      cycleTimes.push(workTime - totalSeconds);
+      addLogEntry(currentCycle, formatTime(workTime - totalSeconds));
+
+      if (currentCycle >= numCycles) {
+        stopTimer();
+      } else {
+        isWorking = false;
+        totalSeconds = restTime;
+        timerDisplay.classList.add('rest');
+        timerDisplay.classList.remove('work');
+        timerDisplay.textContent = formatTime(totalSeconds);
+        finishSound.play(); // Som ao finalizar questão
+      }
+    }
+  }
+
+  function addLogEntry(questionNumber, timeSpent) {
+    const row = logTable.insertRow();
+    const cell1 = row.insertCell(0);
+    const cell2 = row.insertCell(1);
+    cell1.textContent = questionNumber;
+    cell2.textContent = timeSpent;
+  }
+
+  function stopTimer() {
+    clearInterval(timer);
+    finishBtn.disabled = true;
+    resetBtn.disabled = false;
+    startBtn.disabled = false;
+    completeSound.play(); // Som ao finalizar todas as questões
+}
+
+  function resetTimer() {
+    clearInterval(timer);
+    timerDisplay.textContent = "00:00";
+    totalTimeDisplay.textContent = "00:00";
+    logTable.innerHTML = "";
+    startBtn.disabled = false;
+    finishBtn.disabled = true;
+    resetBtn.disabled = true;
+    pauseBtn.disabled = true;
+    questionInfo.style.display = "none";
+
+timerDisplay.classList.remove('work', 'rest', 'paused'); // Remove as classes anteriores
+    timerDisplay.classList.add('start');
+  }
+
+  function pauseTimer() {
+    if (isPaused) {
+      resumeSound.play(); // Som ao retomar
+      isPaused = false;
+      pauseBtn.textContent = "Pausar";
+      timerDisplay.classList.remove('paused');
+    } else {
+      pauseSound.play(); // Som ao pausar
+      isPaused = true;
+      pauseBtn.textContent = "Retomar";
+      timerDisplay.classList.add('paused');
+    }
+  }
+
+  // Adicionando eventos aos botões
+  startBtn.addEventListener('click', startTimer);
+  finishBtn.addEventListener('click', finishQuestion);
+  resetBtn.addEventListener('click', resetTimer);
+  pauseBtn.addEventListener('click', pauseTimer);
+  
+  // Atalhos de teclado
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' && !finishBtn.disabled) {
+      finishQuestion();
+    }
+    if (event.key === ' ') { // Espaço para pausar ou retomar
+      event.preventDefault();
+      pauseTimer();
+    }
+  });
+</script>
+</body>
+</html>
