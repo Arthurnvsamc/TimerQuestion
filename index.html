@@ -68,8 +68,12 @@
     <!-- Botões -->
     <button id="startBtn">Iniciar</button>
     <button id="pauseBtn" disabled>Pausar</button>
+
+    <button id="skipRestBtn" click="skipRest()">Pular Descanso</button>
+
     <button id="finishBtn" disabled>Finalizar Questão (Enter)</button>
     <button id="resetBtn" disabled>Reiniciar</button>
+
   </div>
 
   <!-- Tabela de Feedback -->
@@ -108,6 +112,7 @@
   const finishSound = document.getElementById('finishSound');
   const pauseSound = document.getElementById('pauseSound');
   const resumeSound = document.getElementById('resumeSound');
+  const skipRestBtn = document.getElementById('skipRestBtn'); // Referência do botão "Pular Descanso"
 
   function formatTime(seconds) {
     const m = String(Math.floor(seconds / 60)).padStart(2, '0');
@@ -167,42 +172,62 @@
     // Chama a função para inicializar com o valor padrão
     updateQuestionInfo();
 
-  function updateTimer() {
+  
+
+function updateTimer() {
     if (totalSeconds > 0 && !isPaused) {
-      totalSeconds--;
-      accumulator++;
-      timerDisplay.textContent = formatTime(totalSeconds);
-      totalTimeDisplay.textContent = formatTime(accumulator);
-    } else if (!isPaused) {
-      if (isWorking) {
-        cycleTimes.push(workTime - totalSeconds); // Salva tempo gasto na questão
-        addLogEntry(currentCycle, formatTime(workTime - totalSeconds));
-        finishSound.play(); // Som ao finalizar questão
-
-        if (currentCycle >= numCycles) {
-          stopTimer();
-        } else {
-          isWorking = false;
-          totalSeconds = restTime;
-          timerDisplay.classList.add('rest');
-          timerDisplay.classList.remove('work');
-          timerDisplay.textContent = formatTime(totalSeconds);
-        }
-      } else {
-        isWorking = true;
-        currentCycle++;
-        totalSeconds = workTime;
-        currentQuestionDisplay.textContent = currentCycle;
-        remainingQuestionsDisplay.textContent = numCycles - currentCycle + 1;
-
-        timerDisplay.classList.add('work');
-        timerDisplay.classList.remove('rest');
+        totalSeconds--;
+        accumulator++;
         timerDisplay.textContent = formatTime(totalSeconds);
+        totalTimeDisplay.textContent = formatTime(accumulator);
+    } else if (!isPaused) {
+        if (isWorking) {
+            // Se estiver no trabalho, finalize o ciclo
+            cycleTimes.push(workTime - totalSeconds);
+            addLogEntry(currentCycle, formatTime(workTime - totalSeconds));
+            finishSound.play();
 
-        startSound.play(); // Reproduzir som ao iniciar
-      }
+            if (currentCycle >= numCycles) {
+                stopTimer();
+            } else {
+                isWorking = false;
+                totalSeconds = restTime;
+                timerDisplay.classList.add('rest');
+                timerDisplay.classList.remove('work');
+                timerDisplay.textContent = formatTime(totalSeconds);
+                skipRestBtn.disabled = false; // Ativar o botão "Pular Descanso"
+            }
+        } else {
+            // Aqui deve ser o caso de descanso
+            // O botão de pular descanso deve ser habilitado quando estiver em descanso
+	    
+            startWorkCycle(); // Inicia o próximo ciclo de trabalho
+        }
     }
+}
+
+
+function startWorkCycle() {
+  isWorking = true;
+  currentCycle++;
+  totalSeconds = workTime;
+  currentQuestionDisplay.textContent = currentCycle;
+  remainingQuestionsDisplay.textContent = numCycles - currentCycle + 1;
+
+  timerDisplay.classList.add('work');
+  timerDisplay.classList.remove('rest');
+  timerDisplay.textContent = formatTime(totalSeconds);
+  startSound.play();
+  
+}
+
+function skipRest() {
+  if (!isWorking) {
+    skipRestBtn.disabled = true; // Desativar o botão "Pular Descanso" ao começar o trabalho
+    startWorkCycle(); // Pular para o próximo ciclo de trabalho
   }
+}
+
 
   function finishQuestion() {
     if (isWorking && currentCycle <= numCycles) {
@@ -218,6 +243,7 @@
         timerDisplay.classList.remove('work');
         timerDisplay.textContent = formatTime(totalSeconds);
         finishSound.play(); // Som ao finalizar questão
+	skipRestBtn.disabled = false; // Ativar o botão "Pular Descanso"
       }
     }
   }
@@ -272,17 +298,20 @@ timerDisplay.classList.remove('work', 'rest', 'paused'); // Remove as classes an
   finishBtn.addEventListener('click', finishQuestion);
   resetBtn.addEventListener('click', resetTimer);
   pauseBtn.addEventListener('click', pauseTimer);
+  skipRestBtn.addEventListener('click', skipRest);
   
   // Atalhos de teclado
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Enter' && !finishBtn.disabled) {
       finishQuestion();
     }
+
     if (event.key === ' ') { // Espaço para pausar ou retomar
       event.preventDefault();
       pauseTimer();
     }
   });
+
 </script>
 </body>
 </html>
