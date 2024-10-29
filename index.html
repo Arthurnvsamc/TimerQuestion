@@ -121,6 +121,7 @@
   }
 
   function startTimer() {
+
     workTime = parseInt(document.getElementById('workTime').value);
     restTime = parseInt(document.getElementById('restTime').value);
     numCycles = parseInt(document.getElementById('numCycles').value);
@@ -144,10 +145,13 @@
     timerDisplay.classList.remove('rest', 'paused');
     timerDisplay.textContent = formatTime(totalSeconds);
     totalTimeDisplay.textContent = formatTime(accumulator);
-    
+
+    document.getElementById('workTime').disabled = true;
+    document.getElementById('restTime').disabled = true;
+    document.getElementById('numCycles').disabled = true;
+  
     startSound.play(); // Reproduzir som ao iniciar
     timer = setInterval(updateTimer, 1000);
-
    
   }
 
@@ -218,6 +222,10 @@ function startWorkCycle() {
   timerDisplay.classList.remove('rest');
   timerDisplay.textContent = formatTime(totalSeconds);
   startSound.play();
+
+    document.getElementById('workTime').disabled = true;
+    document.getElementById('restTime').disabled = true;
+    document.getElementById('numCycles').disabled = true;
   
 }
 
@@ -244,6 +252,9 @@ function skipRest() {
         timerDisplay.textContent = formatTime(totalSeconds);
         finishSound.play(); // Som ao finalizar questão
 	skipRestBtn.disabled = false; // Ativar o botão "Pular Descanso"
+
+
+
       }
     }
   }
@@ -261,6 +272,9 @@ function skipRest() {
     finishBtn.disabled = true;
     resetBtn.disabled = false;
     startBtn.disabled = false;
+
+
+
     completeSound.play(); // Som ao finalizar todas as questões
 }
 
@@ -277,6 +291,11 @@ function skipRest() {
 
 timerDisplay.classList.remove('work', 'rest', 'paused'); // Remove as classes anteriores
     timerDisplay.classList.add('start');
+
+    document.getElementById('workTime').disabled = false;
+    document.getElementById('restTime').disabled = false;
+    document.getElementById('numCycles').disabled = false;
+
   }
 
   function pauseTimer() {
