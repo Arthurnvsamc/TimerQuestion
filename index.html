@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt">
+<html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -73,6 +73,7 @@
 
     <button id="finishBtn" disabled>Finalizar Questão (Enter)</button>
     <button id="resetBtn" disabled>Reiniciar</button>
+
 
   </div>
 
@@ -274,8 +275,10 @@ function skipRest() {
     startBtn.disabled = false;
 
 
-
+    
     completeSound.play(); // Som ao finalizar todas as questões
+    alert("✅ TAREFA FINALIZADA ✅");
+
 }
 
   function resetTimer() {
@@ -311,6 +314,20 @@ timerDisplay.classList.remove('work', 'rest', 'paused'); // Remove as classes an
       timerDisplay.classList.add('paused');
     }
   }
+      
+  function mostrarNotificacao() {
+            // Verifica se a permissão para notificações foi concedida
+            if (Notification.permission === "granted") {
+                new Notification("Esta é uma notificação do navegador!");
+            } else if (Notification.permission !== "denied") {
+                // Se a permissão não foi concedida, solicita ao usuário
+                Notification.requestPermission().then(permission => {
+                    if (permission === "granted") {
+                        new Notification("Esta é uma notificação do navegador!");
+                    }
+                });
+            }
+        } 
 
   // Adicionando eventos aos botões
   startBtn.addEventListener('click', startTimer);
