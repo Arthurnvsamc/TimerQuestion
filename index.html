@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Timer de Questões</title>
 <link rel="icon" href="icone.ico" type="image/x-icon">
+<link rel="manifest" href="manifest.json">
 
 <style>
   /* Estilos gerais e modo noturno */
@@ -31,6 +32,8 @@
 </style>
 </head>
 <body>
+
+
 
 <audio id="startSound" src="start.mp3" preload="auto"></audio>
 <audio id="finishSound" src="finish.mp3" preload="auto"></audio>
@@ -97,7 +100,7 @@
 <script>
   let workTime, restTime, numCycles, currentCycle, totalSeconds;
   let timer, accumulator = 0, isWorking = true, isPaused = false, cycleTimes = [];
-
+  
   const timerDisplay = document.getElementById('timerDisplay');
   const totalTimeDisplay = document.getElementById('totalTime');
   const startBtn = document.getElementById('startBtn');
@@ -335,6 +338,16 @@ timerDisplay.classList.remove('work', 'rest', 'paused'); // Remove as classes an
   resetBtn.addEventListener('click', resetTimer);
   pauseBtn.addEventListener('click', pauseTimer);
   skipRestBtn.addEventListener('click', skipRest);
+  
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('service-worker.js').then(registration => {
+        console.log('Service Worker registrado com sucesso:', registration);
+      }).catch(error => {
+        console.error('Erro ao registrar o Service Worker:', error);
+      });
+    });
+  }
   
   // Atalhos de teclado
   document.addEventListener('keydown', (event) => {
