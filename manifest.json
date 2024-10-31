@@ -1,7 +1,7 @@
 {
   "name": "Timer de Questões",
   "short_name": "Timer",
-  "start_url": "/",
+  "start_url": "./",
   "display": "standalone",
   "background_color": "#121212",
   "theme_color": "#1e1e1e",
@@ -9,7 +9,7 @@
   "icons": [
     {
       "src": "icone.ico",
-      "sizes": "192x192",
+      "sizes": "128x128",
       "type": "image/x-icon"
     }
   ]
